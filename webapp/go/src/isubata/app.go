@@ -12,6 +12,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"strconv"
 	"strings"
@@ -721,6 +722,9 @@ func tRange(a, b int64) []int64 {
 }
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("0.0.0.0:6060", nil))
+	}()
 	e := echo.New()
 	funcs := template.FuncMap{
 		"add":    tAdd,
@@ -757,7 +761,4 @@ func main() {
 	e.GET("/icons/:file_name", getIcon)
 
 	e.Start(":5000")
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 }
