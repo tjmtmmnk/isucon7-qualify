@@ -26,6 +26,7 @@ services:
       - "30000:30000"
     volumes:
       - ./files/app/nginx.conf:/etc/nginx/nginx.conf
+      - .:/home/isucon/isubata
   app:
     build:
       context: ./docker/app/golang

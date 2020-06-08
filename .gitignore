@@ -8,3 +8,5 @@ bench/isucon7q-initial-dataset.sql.gz
 bench/result.json
 webapp/perl/local
 webapp/go/src/isubata/sandbox
+webapp/public/icons/*
+
