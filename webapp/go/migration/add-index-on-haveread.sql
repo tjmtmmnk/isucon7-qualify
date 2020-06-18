@@ -1,0 +1,1 @@
+alter table `haveread` add index `user_id_channel_id` (`user_id`, `channel_id`);

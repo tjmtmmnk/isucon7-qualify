@@ -1,0 +1,1 @@
+alter table `message` add index `channel_id_id` (`channel_id`, `id`)
