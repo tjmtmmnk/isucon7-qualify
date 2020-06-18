@@ -78,13 +78,6 @@ func init() {
 	log.Printf("Succeeded to connect db.")
 }
 
-func queryMessages(chanID, lastID int64) ([]Message, error) {
-	msgs := []Message{}
-	err := db.Select(&msgs, "SELECT * FROM message WHERE id > ? AND channel_id = ? ORDER BY id DESC LIMIT 100",
-		lastID, chanID)
-	return msgs, err
-}
-
 // request handlers
 
 func getInitialize(c echo.Context) error {

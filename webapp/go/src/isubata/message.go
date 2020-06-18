@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo"
 	"net/http"
 	"strconv"
@@ -14,6 +15,13 @@ type Message struct {
 	UserID    int64     `db:"user_id"`
 	Content   string    `db:"content"`
 	CreatedAt time.Time `db:"created_at"`
+}
+
+func queryMessages(chanID, lastID int64) ([]Message, error) {
+	msgs := []Message{}
+	err := db.Select(&msgs, "SELECT * FROM message WHERE channel_id = ? AND id > ? ORDER BY id DESC LIMIT 100",
+		chanID, lastID)
+	return msgs, err
 }
 
 func addMessage(channelID, userID int64, content string) (int64, error) {
@@ -46,14 +54,9 @@ func getMessage(c echo.Context) error {
 		return err
 	}
 
-	response := make([]map[string]interface{}, 0)
-	for i := len(messages) - 1; i >= 0; i-- {
-		m := messages[i]
-		r, err := jsonifyMessage(m)
-		if err != nil {
-			return err
-		}
-		response = append(response, r)
+	response, err := jsonifyMessages(messages)
+	if err != nil {
+		return err
 	}
 
 	if len(messages) > 0 {
@@ -178,4 +181,47 @@ func jsonifyMessage(m Message) (map[string]interface{}, error) {
 	r["date"] = m.CreatedAt.Format("2006/01/02 15:04:05")
 	r["content"] = m.Content
 	return r, nil
+}
+
+func jsonifyMessages(messages []Message) ([]map[string]interface{}, error) {
+	userIds := make([]int64, 0)
+
+	jsons := make([]map[string]interface{}, 0)
+
+	for _, m := range messages {
+		userIds = append(userIds, m.UserID)
+	}
+
+	if len(userIds) == 0 {
+		return jsons, nil
+	}
+
+	users := []User{}
+	userIdToUser := make(map[int64]User)
+
+	sql, params, err := sqlx.In("SELECT id, name, display_name, avatar_icon FROM user WHERE id IN(?)", userIds)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Select(&users, sql, params...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		userIdToUser[user.ID] = user
+	}
+
+	for i := len(messages) - 1; i >= 0; i-- {
+		json := make(map[string]interface{})
+		json["id"] = messages[i].ID
+		json["user"] = userIdToUser[messages[i].UserID]
+		json["date"] = messages[i].CreatedAt.Format("2006/01/02 15:04:05")
+		json["content"] = messages[i].Content
+		jsons = append(jsons, json)
+	}
+
+	return jsons, err
 }
